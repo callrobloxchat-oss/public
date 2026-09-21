@@ -1499,30 +1499,96 @@ Tog("Coconut Penis",pgT,function() return CocoPenisEnabled end,function(v)
                                     Part.CFrame=targetCF
                                     Part.Velocity=Vector3.zero
                                     Part.AssemblyLinearVelocity=Vector3.zero
-                                    Part.AssemblyAngularVelocity=Vector3.zero
-                                    Part.Anchored=false
-                                    Part.CanCollide=false
-                                    Part.CanQuery=false
-                                end)
-                            end
+-- ============================================================
+--   COCONUT PENIS (Troll) — оригинальная логика
+-- ============================================================
+Sec("COCONUT PENIS",pgT,80)
 
-                            -- Убираем столкновения и запросы у всех частей
-                            for _,PartObj in ipairs(Coconut:GetChildren()) do
-                                if PartObj:IsA("BasePart") then
-                                    pcall(function()
-                                        PartObj.CanCollide=false
-                                        PartObj.CanQuery=false
-                                    end)
+local CocoPenisEnabled=false
+local CocoAmountValue=10
+local CocoDampingValue=100
+
+Tog("Coconut Penis",pgT,function() return CocoPenisEnabled end,function(Value)
+    CocoPenisEnabled=Value
+    if not Value then
+        return
+    end
+    task.spawn(function()
+        local Me=LP
+        local ReplicatedStorage=RSt
+        local SetNetworkOwner=ReplicatedStorage.GrabEvents.SetNetworkOwner
+        local SpawnToy=ReplicatedStorage.MenuToys.SpawnToyRemoteFunction
+        local DestroyToy=ReplicatedStorage.MenuToys.DestroyToy
+        local Offsets={
+            [1]=CFrame.new(-0.45,-1.2,-0.7),
+            [2]=CFrame.new(0.45,-1.2,-0.7),
+            [3]=CFrame.new(0,-1,0.8),
+        }
+        local Coconuts={}
+        while CocoPenisEnabled do
+            local Character=Me.Character
+            local Root=Character and Character:FindFirstChild('HumanoidRootPart')
+            if not Root then
+                task.wait(0.1)
+            else
+                local Folder=workspace:FindFirstChild(Me.Name..'SpawnedInToys')
+                if not Folder then
+                    task.wait(0.1)
+                else
+                    local Length=CocoAmountValue
+                    local Damping=CocoDampingValue
+                    table.clear(Coconuts)
+                    for _,Toy in ipairs(Folder:GetChildren()) do
+                        if Toy.Name=='FoodCoconut' then
+                            table.insert(Coconuts,Toy)
+                        end
+                    end
+                    if #Coconuts < (Length+2) then
+                        task.spawn(function()
+                            pcall(function()
+                                SpawnToy:InvokeServer('FoodCoconut',Root.CFrame*CFrame.new(-5,0,10),Vector3.zero)
+                            end)
+                        end)
+                    end
+                    for i,Coconut in ipairs(Coconuts) do
+                        local Part=Coconut:FindFirstChild('SoundPart')
+                        local HoldPart=Coconut:FindFirstChild('HoldPart')
+                        local Rigid=HoldPart and HoldPart:FindFirstChild('RigidConstraint')
+                        local PartOwner=Part and Part:FindFirstChild('PartOwner')
+                        if Part and HoldPart and Rigid then
+                            if PartOwner and PartOwner.Value==Me.Name then
+                                if i<=2 then
+                                    Part.CFrame=Root.CFrame*Offsets[i]*CFrame.new(Root.Velocity/Damping)
+                                else
+                                    Part.CFrame=Root.CFrame*Offsets[3]*CFrame.new(Root.Velocity/Damping)*CFrame.new(0,0,Offsets[3].Z)
+                                end
+                            end
+                            pcall(function() Part.Velocity=Vector3.zero end)
+                        elseif Part then
+                            pcall(function() SetNetworkOwner:FireServer(Part,Part.CFrame) end)
+                        end
+                        if Rigid and Rigid.Attachment1 then
+                            pcall(function() DestroyToy:FireServer(Coconut) end)
+                        end
+                        for _,PartObj in ipairs(Coconut:GetChildren()) do
+                            if PartObj:IsA('BasePart') then
+                                PartObj.CanCollide=false
+                                PartObj.CanQuery=false
+                                if PartObj.Transparency==1 then
+                                    PartObj.Transparency=0
                                 end
                             end
                         end
                     end
                 end
             end
-            task.wait(0.02)
+            task.wait(0.01)
         end
     end)
 end,81)
+
+Sld("Coconut Amount",pgT,3,25,function() return CocoAmountValue end,function(v) CocoAmountValue=v end,82,1)
+Sld("Coconut Damping",pgT,1,500,function() return CocoDampingValue end,function(v) CocoDampingValue=v end,83,1)
 
 -- ============================================================
 --   FINALIZE
